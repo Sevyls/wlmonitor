@@ -75,7 +75,7 @@ puts "Lese Steige..."
 
 CSV.foreach("./wl-data/wienerlinien-ogd-steige.csv", col_sep: ';', headers: true) do |row|
   s = Steig.new row
-  
+
   h = haltestellen[row.field("FK_HALTESTELLEN_ID")]
   s.haltestelle = h
 
@@ -95,15 +95,15 @@ end
 
 get '/haltestellen' do
   @haltestellen = haltestellen
-  erb :haltestellen
+  erb :haltestellen, :layout => :application
 end
 
 get '/haltestellen/:id' do
   @h = haltestellen[params[:id]]
 
   if @h
-    erb :haltestelle
-  else 
+    erb :haltestelle, :layout => :application
+  else
     "Keine Haltestelle gefunden"
   end
 end
