@@ -1,2 +1,10 @@
 <h1><%= @h.name %></h1>
+<h3>Koordinaten</h3>
 <p><%= @h.lat %> <%= @h.lon %></p>
+
+<h3>Steige</h3>
+<ul>
+<% @h.steige.each do |s| %>
+  <li><%= erb :steig, locals: { s: s } %></li>
+<% end %>
+</ul>

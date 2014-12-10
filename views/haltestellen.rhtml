@@ -1,6 +1,6 @@
 <h1><%= @haltestellen.size %> Haltestellen gefunden</h1>
-<ul>
+<div class="list-group">
 <% @haltestellen.each_value do |h| %>
-  <li><a href="/haltestellen/<%= h.id %>"><%= h.name %></a></li>
+  <a href="/haltestellen/<%= h.id %>" class="list-group-item"><%= h.name %></a>
 <% end %>
-</ul>
+</div>

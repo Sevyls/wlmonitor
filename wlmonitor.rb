@@ -26,7 +26,7 @@ class Linie
 
   def initialize(csv_row)
     @id = csv_row.field("LINIEN_ID")
-    @bezeichung = csv_row.field("BEZEICHNUNG")
+    @bezeichnung = csv_row.field("BEZEICHNUNG")
     @reihenfolge = csv_row.field("REIHENFOLGE")
     @echzeit = csv_row.field("ECHTZEIT")
     @verkehrsmittel = csv_row.field("VERKEHRSMITTEL")
