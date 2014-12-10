@@ -1,6 +1,24 @@
 require 'csv'
 require 'active_support/all'
 require 'sinatra'
+require 'json'
+
+# Load credentials
+begin
+  cred_file = File.open(ENV["CRED_FILE"]).read
+  creds = JSON.parse(cred_file)
+
+  config = {
+    :google_maps_api_key => creds["GOOGLE_MAPS_API_KEY"],
+  }
+rescue
+  puts "Could not open the creds.json file"
+end
+
+
+configure do
+  set :google_maps_api_key, config[:google_maps_api_key]
+end
 
 class Haltestelle
   attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige
