@@ -92,3 +92,18 @@ puts "Fertig, insgesamt #{steige.size} Steige gelesen."
 get '/' do
   send_file 'public/index.html'
 end
+
+get '/haltestellen' do
+  @haltestellen = haltestellen
+  erb :haltestellen
+end
+
+get '/haltestellen/:id' do
+  @h = haltestellen[params[:id]]
+
+  if @h
+    erb :haltestelle
+  else 
+    "Keine Haltestelle gefunden"
+  end
+end
