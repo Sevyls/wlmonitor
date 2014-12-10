@@ -5,18 +5,18 @@ require 'json'
 
 # Load credentials
 begin
-  cred_file = File.open(ENV["CRED_FILE"]).read
-  creds = JSON.parse(cred_file)
-
-  creds = creds['CONFIG']['CONFIG_VARS']
-  
-  config = {
-    :google_maps_api_key => creds["GOOGLE_MAPS_API_KEY"],
-  }
+  filepath = ENV["CRED_FILE"]
+  filepath ||= "creds.json"
+  cred_file = File.open(filepath).read
+  creds = JSON.parse(cred_file)['CONFIG']['CONFIG_VARS']
 rescue
   puts "Could not open the creds.json file"
+  creds = JSON.generate Hash.new
 end
 
+config = {
+  :google_maps_api_key => creds["GOOGLE_MAPS_API_KEY"] || nil,
+}
 
 configure do
   set :google_maps_api_key, config[:google_maps_api_key]

@@ -1,5 +1,9 @@
 <h1><%= @haltestellen.size %> Haltestellen gefunden</h1>
-<div class="list-group">
+<div class="form-group has-feedback">
+<input type="text" id="haltestelle-filter" class="form-control" placeholder="Filtern...">
+<i class="glyphicon glyphicon-filter form-control-feedback"></i>
+</div>
+<div id="haltestellen-liste" class="list-group">
 <% @haltestellen.each_value do |h| %>
   <a href="/haltestellen/<%= h.id %>" class="list-group-item"><%= h.name %></a>
 <% end %>
