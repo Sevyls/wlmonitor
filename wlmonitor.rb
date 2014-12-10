@@ -90,7 +90,7 @@ puts "Fertig, insgesamt #{steige.size} Steige gelesen."
 
 
 get '/' do
-  send_file 'public/index.html'
+  erb :index, :layout => :application
 end
 
 get '/haltestellen' do
