@@ -27,14 +27,22 @@
 <body>
   <nav class="navbar navbar-default" role="navigation">
     <div class="container-fluid">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="/">WLMonitor</a>
-    </div>
+			<div class="navbar-header">
+      	<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+        	<span class="sr-only">Toggle navigation</span>
+        	<span class="icon-bar"></span>
+        	<span class="icon-bar"></span>
+        	<span class="icon-bar"></span>
+      	</button>
+      	<a class="navbar-brand" href="/">WLMonitor</a>
+    	</div>
+			<div class="collapse navbar-collapse">
+				<ul class="nav navbar-nav">
+					<li<%= ' class="active"' if (@h or @haltestellen) %>><a href="/haltestellen">Haltestellen</a></li>
+					<li<%= ' class="active"' if (@l or @linien) %>><a href="/linien">Linien</a></li>
+				</ul>
+			</div>
+		</div>
   </nav>
   <!--[if lt IE 7]>
   <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
