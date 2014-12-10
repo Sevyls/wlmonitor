@@ -1,0 +1,6 @@
+<h1>Linien</h1>
+<div class="list-group">
+<% @linien.each_value do |l| %>
+	<a href="/linien/<%= l.id %>" class="list-group-item"><%= l.bezeichnung %></a>
+<% end %>
+</div>

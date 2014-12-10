@@ -113,6 +113,21 @@ get '/' do
   erb :index, :layout => :application
 end
 
+get '/linien' do
+  @linien = linien
+  erb :linien, :layout => :application
+end
+
+get '/linien/:id' do
+  @l = linien[params[:id]]
+  
+  if @l
+    erb :linie, :layout => :application
+  else
+    "Keine Linie gefunden"
+  end
+end
+
 get '/haltestellen' do
   @haltestellen = haltestellen
   erb :haltestellen, :layout => :application
