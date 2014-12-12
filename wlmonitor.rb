@@ -65,8 +65,8 @@ class Steig
     @rbl_nr = csv_row.field("RBL_NUMMER")
     @bereich = csv_row.field("BEREICH")
     @steig = csv_row.field("STEIG")
-    @lat  = csv_row.field("WGS84_LAT")
-    @lon  = csv_row.field("WGS84_LON")
+    @lat  = csv_row.field("STEIG_WGS84_LAT")
+    @lon  = csv_row.field("STEIG_WGS84_LON")
 
   end
 end
@@ -120,7 +120,7 @@ end
 
 get '/linien/:id' do
   @l = linien[params[:id]]
-  
+
   if @l
     erb :linie, :layout => :application
   else

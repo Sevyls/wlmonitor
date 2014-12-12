@@ -1,6 +1,13 @@
 <h1><%= @h.name %></h1>
-<h3>Koordinaten</h3>
-<p><%= @h.lat %> <%= @h.lon %></p>
+<div id="haltestelle-koordinaten">
+  <div class="row">
+    <h3>Koordinaten</h3>
+    <p class="koords"><span class="lat"><%= @h.lat %></span>, <span class="lon"><%= @h.lon %></span></p>
+  </div>
+  <div class="row">
+    <div id="haltestelle-map" class="col-md-8"></div>
+  </div>
+</div>
 
 <h3>Steige</h3>
 <ul>
