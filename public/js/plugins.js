@@ -21,6 +21,14 @@
     }
 }());
 
+// Thanks to Nick Craver
+// via http://stackoverflow.com/questions/2196641/how-do-i-make-jquery-contains-case-insensitive-including-jquery-1-8
+jQuery.expr[":"].Contains = jQuery.expr.createPseudo(function(arg) {
+  return function( elem ) {
+    return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+  };
+});
+
 // Place any jQuery/helper plugins in here.
 /*
 bindWithDelay jQuery plugin
