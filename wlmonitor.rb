@@ -58,7 +58,7 @@ class Haltestelle
           "rbl=#{s.rbl_nr}"
         else
           nil
-        end  }.join('&')
+        end  }.compact.join('&')
       @url = "http://www.wienerlinien.at/ogd_realtime/monitor?#{rbl_nrs}&sender=#{Sinatra::Application.settings.wlsender}"
       
       resp = Net::HTTP.get_response(URI.parse(@url))
