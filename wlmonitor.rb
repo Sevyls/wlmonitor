@@ -53,7 +53,7 @@ class Haltestelle
   def refresh_monitors
     unless @steige.empty?
       rbl_nrs = @steige.map { |s| 
-        // manche Steige haben keine RBL_NR im CSV...
+        # manche Steige haben keine RBL_NR im CSV...
         unless s.rbl_nr.empty?
           "rbl=#{s.rbl_nr}"
         else
