@@ -2,6 +2,9 @@ require 'csv'
 require 'active_support/all'
 require 'sinatra'
 require 'json'
+require 'net/http'
+require 'logger'
+   
 
 # Load credentials
 begin
@@ -16,14 +19,23 @@ end
 
 config = {
   :google_maps_api_key => creds["GOOGLE_MAPS_API_KEY"] || nil,
+  :wlsender => creds["WLSENDER"] || nil,
 }
 
 configure do
+  enable :logging
+  set :logging, nil
+    logger = Logger.new STDOUT
+    logger.level = Logger::INFO
+    logger.datetime_format = '%a %d-%m-%Y %H%M '
+    set :logger, logger
   set :google_maps_api_key, config[:google_maps_api_key]
+  set :wlsender, config[:wlsender]
 end
+logger = Logger.new STDOUT
 
 class Haltestelle
-  attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige
+  attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige, :json, :url
 
   # csv format: "HALTESTELLEN_ID";"TYP";"DIVA";"NAME";"GEMEINDE";"GEMEINDE_ID";"WGS84_LAT";"WGS84_LON"
   def initialize(csv_row)
@@ -36,6 +48,34 @@ class Haltestelle
     @gemeinde = csv_row.field("GEMEINDE")
     @gemeinde_id = csv_row.field("GEMEINDE_ID")
     @steige = []
+  end
+  
+  def refresh_monitors
+    unless @steige.empty?
+      rbl_nrs = @steige.map { |s| 
+        // manche Steige haben keine RBL_NR im CSV...
+        unless s.rbl_nr.empty?
+          "rbl=#{s.rbl_nr}"
+        else
+          nil
+        end  }.join('&')
+      @url = "http://www.wienerlinien.at/ogd_realtime/monitor?#{rbl_nrs}&sender=#{Sinatra::Application.settings.wlsender}"
+      
+      resp = Net::HTTP.get_response(URI.parse(@url))
+      unless resp.code == '500'
+        data = resp.body
+        @json = JSON.parse(data)
+        monitors = @json["data"]["monitors"]
+        @steige.each do |s|
+          s.monitor = monitors.select do |monitor| 
+            monitor['locationStop']['properties']['attributes']['rbl'] == s.rbl_nr.to_i and
+            not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty? 
+          end
+        end
+      end
+    else
+      nil
+    end
   end
 end
 
@@ -56,7 +96,7 @@ end
 class Steig
   # "STEIG_ID";"FK_LINIEN_ID";"FK_HALTESTELLEN_ID";"RICHTUNG";"REIHENFOLGE";"RBL_NUMMER";"BEREICH";"STEIG";"STEIG_WGS84_LAT";"STEIG_WGS84_LON";"STAND"
 
-  attr_accessor :id, :linie, :haltestelle, :richtung, :reihenfolge, :rbl_nr, :bereich, :steig, :lat, :lon
+  attr_accessor :id, :linie, :haltestelle, :richtung, :reihenfolge, :rbl_nr, :bereich, :steig, :lat, :lon, :monitor
 
   def initialize(csv_row)
     @id   = csv_row.field("STEIG_ID")
@@ -67,7 +107,6 @@ class Steig
     @steig = csv_row.field("STEIG")
     @lat  = csv_row.field("STEIG_WGS84_LAT")
     @lon  = csv_row.field("STEIG_WGS84_LON")
-
   end
 end
 
@@ -137,6 +176,7 @@ get '/haltestellen/:id' do
   @h = haltestellen[params[:id]]
 
   if @h
+    @h.refresh_monitors
     erb :haltestelle, :layout => :application
   else
     "Keine Haltestelle gefunden"
