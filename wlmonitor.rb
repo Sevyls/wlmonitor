@@ -4,7 +4,7 @@ require 'sinatra'
 require 'json'
 require 'net/http'
 require 'logger'
-   
+
 
 # Load credentials
 begin
@@ -49,10 +49,10 @@ class Haltestelle
     @gemeinde_id = csv_row.field("GEMEINDE_ID")
     @steige = []
   end
-  
+
   def refresh_monitors
     unless @steige.empty?
-      rbl_nrs = @steige.map { |s| 
+      rbl_nrs = @steige.map { |s|
         # manche Steige haben keine RBL_NR im CSV...
         unless s.rbl_nr.empty?
           "rbl=#{s.rbl_nr}"
@@ -60,16 +60,16 @@ class Haltestelle
           nil
         end  }.compact.join('&')
       @url = "http://www.wienerlinien.at/ogd_realtime/monitor?#{rbl_nrs}&sender=#{Sinatra::Application.settings.wlsender}"
-      
+
       resp = Net::HTTP.get_response(URI.parse(@url))
       unless resp.code == '500'
         data = resp.body
         @json = JSON.parse(data)
         monitors = @json["data"]["monitors"]
         @steige.each do |s|
-          s.monitor = monitors.select do |monitor| 
+          s.monitor = monitors.select do |monitor|
             monitor['locationStop']['properties']['attributes']['rbl'] == s.rbl_nr.to_i and
-            not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty? 
+            not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty?
           end
         end
       end
@@ -82,7 +82,7 @@ end
 class Linie
   # "LINIEN_ID";"BEZEICHNUNG";"REIHENFOLGE";"ECHTZEIT";"VERKEHRSMITTEL";"STAND"
 
-  attr_accessor :id, :bezeichnung, :reihenfolge, :echtzeit, :verkehrsmittel
+  attr_accessor :id, :bezeichnung, :reihenfolge, :echtzeit, :verkehrsmittel, :haltestellen
 
   def initialize(csv_row)
     @id = csv_row.field("LINIEN_ID")
@@ -90,6 +90,7 @@ class Linie
     @reihenfolge = csv_row.field("REIHENFOLGE")
     @echzeit = csv_row.field("ECHTZEIT")
     @verkehrsmittel = csv_row.field("VERKEHRSMITTEL")
+    @haltestellen = Hash.new
   end
 end
 
@@ -126,6 +127,15 @@ CSV.foreach("./wl-data/wienerlinien-ogd-linien.csv", col_sep: ';', headers: true
   l = Linie.new row
   linien[l.id] = l
 end
+
+linien_types = linien.map {|id, l| l.verkehrsmittel }.uniq
+
+types = Hash.new
+linien_types.each do |t|
+  types[t] = linien.select {|id,l| l.is_a? Linie and l.verkehrsmittel == t }
+end
+
+puts types.inspect
 puts "Fertig, insgesamt #{linien.size} Linien gelesen."
 
 steige = Hash.new
@@ -141,6 +151,8 @@ CSV.foreach("./wl-data/wienerlinien-ogd-steige.csv", col_sep: ';', headers: true
   l = linien[row.field("FK_LINIEN_ID")]
   s.linie = l
 
+  l.haltestellen[s.reihenfolge.to_i] = h
+
   h.steige << s
   steige[s.id] = s
 end
@@ -154,6 +166,7 @@ end
 
 get '/linien' do
   @linien = linien
+  @types = types
   erb :linien, :layout => :application
 end
 
@@ -181,4 +194,9 @@ get '/haltestellen/:id' do
   else
     "Keine Haltestelle gefunden"
   end
+end
+
+get '/karte' do
+  @map = Hash.new
+  erb :karte, :layout => :application
 end

@@ -1,5 +1,7 @@
 <h1><%= @l.bezeichnung %></h1>
 <p><%= @l.verkehrsmittel %></p>
-<% if @l.verkehrsmittel == 'ptMetro' %>
-<p><img src="/img/wl-piktogramme/<%= @l.bezeichnung.downcase %>.eps">	
-<% end %>
+<div class="list-group">
+  <% @l.haltestellen.each_value do |h| %>
+  <a href="/haltestellen/<%= h.id %>" class="list-group-item"><%= h.name %></a>
+  <% end %>
+</div>
