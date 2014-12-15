@@ -135,7 +135,6 @@ linien_types.each do |t|
   types[t] = linien.select {|id,l| l.is_a? Linie and l.verkehrsmittel == t }
 end
 
-puts types.inspect
 puts "Fertig, insgesamt #{linien.size} Linien gelesen."
 
 steige = Hash.new

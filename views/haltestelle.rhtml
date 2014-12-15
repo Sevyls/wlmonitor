@@ -1,27 +1,28 @@
-<h1><%= @h.name %></h1>
-<div id="haltestelle-koordinaten">
-  <div class="row">
-    <h3>Koordinaten</h3>
+<div id="haltestelle-koordinaten"class="row">
+  <div class="col-xs-offset-1 col-xs-9 col-md-offset-0 col-md-12">
+    <h1><%= @h.name %></h1>
     <p class="koords"><span class="lat"><%= @h.lat %></span>, <span class="lon"><%= @h.lon %></span></p>
-  </div>
-  <div class="row">
-    <div id="haltestelle-map" class="col-md-8"></div>
+    <div id="haltestelle-map"></div>
   </div>
 </div>
 
-<h3>Steige</h3>
-<ul>
-<% @h.steige.each do |s| %>
-  <li><%= erb :steig, locals: { s: s } %></li>
-<% end %>
-</ul>
-<p class="debug">
-<code>
-<%= @h.url %>
-</code>
-</p>
-<p class="debug">
-<code>
-<%= @h.json %>	
-</code>
-</p>
+<div id="steige-liste" class="row">
+  <div class="col-xs-offset-1 col-xs-9 col-md-offset-0 col-md-12">
+    <h3>Steige</h3>
+    <ul>
+    <% @h.steige.each do |s| %>
+      <li><%= erb :steig, locals: { s: s } %></li>
+    <% end %>
+    </ul>
+    <p class="debug">
+    <code>
+    <%= @h.url %>
+    </code>
+    </p>
+    <p class="debug">
+    <code>
+    <%= @h.json %>
+    </code>
+    </p>
+  </div>
+</div>
