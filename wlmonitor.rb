@@ -5,6 +5,39 @@ require 'json'
 require 'net/http'
 require 'logger'
 
+# Load wl-data
+uris = {
+  haltestellen: URI('http://data.wien.gv.at/csv/wienerlinien-ogd-haltestellen.csv'),
+  linien:       URI('http://data.wien.gv.at/csv/wienerlinien-ogd-linien.csv'),
+  steige:       URI('http://data.wien.gv.at/csv/wienerlinien-ogd-steige.csv'),
+  version:      URI('http://data.wien.gv.at/csv/wienerlinien-ogd-version.csv')
+}
+
+uris.each do |name, uri|
+  response = nil
+  Net::HTTP.start(uri.host, uri.port) do |http|
+    response = http.head(uri) 
+    
+    if response.code_type.eql? Net::HTTPOK
+      modified = response['Last-Modified']
+      datetime = DateTime.httpdate modified
+    
+      filename = "wl-data/#{name}.csv"
+ 
+      # Download file
+      response = http.get(uri)
+      # Save file
+      open(filename, "wb") do |file|
+        file.write(response.body)
+      end
+      time = Time.parse(datetime.to_s)
+      File.utime(time, time, filename)
+    end
+      
+    puts "#{name}: #{modified}"
+  end
+end
+
 
 # Load credentials
 begin
@@ -113,7 +146,7 @@ end
 
 puts "Lese Haltestellen..."
 haltestellen = Hash.new
-CSV.foreach("./wl-data/wienerlinien-ogd-haltestellen.csv", col_sep: ';', headers: true) do |row|
+CSV.foreach("./wl-data/haltestellen.csv", col_sep: ';', headers: true) do |row|
   h = Haltestelle.new row
   haltestellen[h.id] = h
 end
@@ -123,7 +156,7 @@ linien = Hash.new
 
 puts "Lese Linien..."
 
-CSV.foreach("./wl-data/wienerlinien-ogd-linien.csv", col_sep: ';', headers: true) do |row|
+CSV.foreach("./wl-data/linien.csv", col_sep: ';', headers: true) do |row|
   l = Linie.new row
   linien[l.id] = l
 end
@@ -141,7 +174,7 @@ steige = Hash.new
 
 puts "Lese Steige..."
 
-CSV.foreach("./wl-data/wienerlinien-ogd-steige.csv", col_sep: ';', headers: true) do |row|
+CSV.foreach("./wl-data/steige.csv", col_sep: ';', headers: true) do |row|
   s = Steig.new row
 
   h = haltestellen[row.field("FK_HALTESTELLEN_ID")]
