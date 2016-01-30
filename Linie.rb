@@ -15,7 +15,9 @@ class Linie
   def to_json
     { 'id' => @id,
       'bezeichnung' => @bezeichnung,
-      'verkehrsmittel' => @verkehrsmittel
+      'reihenfolge' => @reihenfolge,
+      'verkehrsmittel' => @verkehrsmittel,
+      'haltestellen' => @haltestellen
     }.to_json
   end
 end

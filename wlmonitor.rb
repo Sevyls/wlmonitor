@@ -125,33 +125,21 @@ class App < Sinatra::Base
     erb :linien, :layout => :application
   end
 
-  get '/linien/:id' do
-    @haltestellen = @@data.haltestellen
-    
-    @l = @@data.linien[params[:id].to_i]
-
-    if @l
-      erb :linie, :layout => :application
-    else
-      "Keine Linie gefunden"
-    end
-  end
-
   get '/haltestellen/?' do
     @haltestellen = @@data.haltestellen
     erb :haltestellen, :layout => :application
   end
 
   get '/haltestellen.json' do
-    json_ids @@data.haltestellen
+    @@data.haltestellen.to_json
   end
 
   get '/linien.json' do
-    json_ids @@data.linien
+    @@data.linien.to_json
   end
 
   get '/steige.json' do
-    json_ids @@data.steige
+    @@data.steige.to_json
   end
 
   get '/haltestellen/:id.json' do
@@ -171,6 +159,18 @@ class App < Sinatra::Base
       @linie.to_json
     else
       status 404
+    end
+  end
+
+  get '/linien/:id' do
+    @haltestellen = @@data.haltestellen
+
+    @l = @@data.linien[params[:id].to_i]
+
+    if @l
+      erb :linie, :layout => :application
+    else
+      "Keine Linie gefunden"
     end
   end
 
