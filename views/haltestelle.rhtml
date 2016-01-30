@@ -1,3 +1,4 @@
+<script src="/js/haltestelle-map.js"></script>
 <div id="haltestelle-koordinaten"class="row">
   <div class="col-xs-offset-1 col-xs-9 col-md-offset-0 col-md-12">
     <h1><%= @h.name %></h1>
@@ -11,7 +12,7 @@
     <h3>Steige</h3>
     <ul>
     <% @h.steige.each do |s| %>
-      <li><%= erb :steig, locals: { s: s } %></li>
+      <li><%= erb :steig, locals: { s: @steige[s], linie: @linien[@steige[s].linie] } %></li>
     <% end %>
     </ul>
     <p class="debug">

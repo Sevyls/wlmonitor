@@ -2,6 +2,6 @@
 <p><%= @l.verkehrsmittel %></p>
 <div class="list-group">
   <% @l.haltestellen.each_value do |h| %>
-  <a href="/haltestellen/<%= h.id %>" class="list-group-item"><%= h.name %></a>
+  <a href="/haltestellen/<%= h %>" class="list-group-item"><%= @haltestellen[h].name %></a>
   <% end %>
 </div>

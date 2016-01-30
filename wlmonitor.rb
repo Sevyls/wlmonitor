@@ -1,234 +1,205 @@
 require 'csv'
 require 'active_support/all'
-require 'sinatra'
+require 'sinatra/base'
 require 'json'
 require 'net/http'
 require 'logger'
 
-# Load wl-data
-uris = {
-  haltestellen: URI('http://data.wien.gv.at/csv/wienerlinien-ogd-haltestellen.csv'),
-  linien:       URI('http://data.wien.gv.at/csv/wienerlinien-ogd-linien.csv'),
-  steige:       URI('http://data.wien.gv.at/csv/wienerlinien-ogd-steige.csv'),
-  version:      URI('http://data.wien.gv.at/csv/wienerlinien-ogd-version.csv')
-}
-
-uris.each do |name, uri|
-  response = nil
-  Net::HTTP.start(uri.host, uri.port) do |http|
-    response = http.head(uri) 
-    
-    if response.code_type.eql? Net::HTTPOK
-      modified = response['Last-Modified']
-      datetime = DateTime.httpdate modified
-    
-      filename = "wl-data/#{name}.csv"
- 
-      # Download file
-      response = http.get(uri)
-      # Save file
-      open(filename, "wb") do |file|
-        file.write(response.body)
-      end
-      time = Time.parse(datetime.to_s)
-      File.utime(time, time, filename)
-    end
-      
-    puts "#{name}: #{modified}"
-  end
-end
+require './WLDataLoader.rb'
+require './Haltestelle.rb'
+require './Linie.rb'
+require './Steig.rb'
 
 
-# Load credentials
-begin
-  filepath = ENV["CRED_FILE"]
-  filepath ||= "creds.json"
-  cred_file = File.open(filepath).read
-  creds = JSON.parse(cred_file)['CONFIG']['CONFIG_VARS']
-rescue
-  puts "Could not open the creds.json file"
-  creds = JSON.generate Hash.new
-end
 
-config = {
-  :google_maps_api_key => creds["GOOGLE_MAPS_API_KEY"] || nil,
-  :wlsender => creds["WLSENDER"] || nil,
-}
+class WLData
+  attr_accessor :haltestellen, :linien, :steige, :types
 
-configure do
-  enable :logging
-  set :logging, nil
-    logger = Logger.new STDOUT
-    logger.level = Logger::INFO
-    logger.datetime_format = '%a %d-%m-%Y %H%M '
-    set :logger, logger
-  set :google_maps_api_key, config[:google_maps_api_key]
-  set :wlsender, config[:wlsender]
-end
-logger = Logger.new STDOUT
-
-class Haltestelle
-  attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige, :json, :url
-
-  # csv format: "HALTESTELLEN_ID";"TYP";"DIVA";"NAME";"GEMEINDE";"GEMEINDE_ID";"WGS84_LAT";"WGS84_LON"
-  def initialize(csv_row)
-    @id   = csv_row.field("HALTESTELLEN_ID")
-    @lat  = csv_row.field("WGS84_LAT")
-    @lon  = csv_row.field("WGS84_LON")
-    @typ  = csv_row.field("TYP")
-    @diva = csv_row.field("DIVA") # Haltestellennummer in der elektonischen Fahrplanauskunft
-    @name = csv_row.field("NAME")
-    @gemeinde = csv_row.field("GEMEINDE")
-    @gemeinde_id = csv_row.field("GEMEINDE_ID")
-    @steige = []
-  end
-
-  def refresh_monitors
-    unless @steige.empty?
-      rbl_nrs = @steige.map { |s|
-        # manche Steige haben keine RBL_NR im CSV...
-        unless s.rbl_nr.empty?
-          "rbl=#{s.rbl_nr}"
-        else
-          nil
-        end  }.compact.join('&')
-      @url = "http://www.wienerlinien.at/ogd_realtime/monitor?#{rbl_nrs}&sender=#{Sinatra::Application.settings.wlsender}"
-
-      resp = Net::HTTP.get_response(URI.parse(@url))
-      unless resp.code == '500'
-        data = resp.body
-        @json = JSON.parse(data)
-        monitors = @json["data"]["monitors"]
-        @steige.each do |s|
-          s.monitor = monitors.select do |monitor|
-            monitor['locationStop']['properties']['attributes']['rbl'] == s.rbl_nr.to_i and
-            not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty?
-          end
-        end
-      end
-    else
-      nil
-    end
-  end
-end
-
-class Linie
-  # "LINIEN_ID";"BEZEICHNUNG";"REIHENFOLGE";"ECHTZEIT";"VERKEHRSMITTEL";"STAND"
-
-  attr_accessor :id, :bezeichnung, :reihenfolge, :echtzeit, :verkehrsmittel, :haltestellen
-
-  def initialize(csv_row)
-    @id = csv_row.field("LINIEN_ID")
-    @bezeichnung = csv_row.field("BEZEICHNUNG")
-    @reihenfolge = csv_row.field("REIHENFOLGE")
-    @echzeit = csv_row.field("ECHTZEIT")
-    @verkehrsmittel = csv_row.field("VERKEHRSMITTEL")
+  def initialize
     @haltestellen = Hash.new
+    @linien = Hash.new
+    @steige = Hash.new
+    @types = Hash.new
   end
 end
 
-class Steig
-  # "STEIG_ID";"FK_LINIEN_ID";"FK_HALTESTELLEN_ID";"RICHTUNG";"REIHENFOLGE";"RBL_NUMMER";"BEREICH";"STEIG";"STEIG_WGS84_LAT";"STEIG_WGS84_LON";"STAND"
+class App < Sinatra::Base
+  attr_reader :logger
 
-  attr_accessor :id, :linie, :haltestelle, :richtung, :reihenfolge, :rbl_nr, :bereich, :steig, :lat, :lon, :monitor
-
-  def initialize(csv_row)
-    @id   = csv_row.field("STEIG_ID")
-    @richtung = csv_row.field("RICHTUNG")
-    @reihenfolge = csv_row.field("REIHENFOLGE")
-    @rbl_nr = csv_row.field("RBL_NUMMER")
-    @bereich = csv_row.field("BEREICH")
-    @steig = csv_row.field("STEIG")
-    @lat  = csv_row.field("STEIG_WGS84_LAT")
-    @lon  = csv_row.field("STEIG_WGS84_LON")
+  def self.data
+    @@data
   end
-end
 
-puts "Lese Haltestellen..."
-haltestellen = Hash.new
-CSV.foreach("./wl-data/haltestellen.csv", col_sep: ';', headers: true) do |row|
-  h = Haltestelle.new row
-  haltestellen[h.id] = h
-end
-puts "Fertig, insgesamt #{haltestellen.size} Haltestellen gelesen."
+  configure do
+    enable :logging
 
-linien = Hash.new
+    logger = Logger.new STDOUT
+    @logger = logger
+    logger.level = Logger::INFO
+    logger.datetime_format = '%a %d-%m-%Y %H:%M:%S '
+    set :logger, logger
+    set :logging, logger
 
-puts "Lese Linien..."
+    # Load credentials
+    begin
+      filepath = ENV["CRED_FILE"]
+      filepath ||= "creds.json"
+      logger.debug "Reading api keys from creds.json"
+      cred_file = File.open(filepath).read
+      creds = JSON.parse(cred_file)['CONFIG']['CONFIG_VARS']
+      logger.debug "Successfully parsed creds.json"
+    rescue
+      logger.error "Could not open or parse the creds.json file"
+      creds = JSON.generate Hash.new
+    end
 
-CSV.foreach("./wl-data/linien.csv", col_sep: ';', headers: true) do |row|
-  l = Linie.new row
-  linien[l.id] = l
-end
+    set :google_maps_api_key, creds["GOOGLE_MAPS_API_KEY"]
+    set :wlsender, creds["WLSENDER"]
 
-linien_types = linien.map {|id, l| l.verkehrsmittel }.uniq
-
-types = Hash.new
-linien_types.each do |t|
-  types[t] = linien.select {|id,l| l.is_a? Linie and l.verkehrsmittel == t }
-end
-
-puts "Fertig, insgesamt #{linien.size} Linien gelesen."
-
-steige = Hash.new
-
-puts "Lese Steige..."
-
-CSV.foreach("./wl-data/steige.csv", col_sep: ';', headers: true) do |row|
-  s = Steig.new row
-
-  h = haltestellen[row.field("FK_HALTESTELLEN_ID")]
-  s.haltestelle = h
-
-  l = linien[row.field("FK_LINIEN_ID")]
-  s.linie = l
-
-  l.haltestellen[s.reihenfolge.to_i] = h
-
-  h.steige << s
-  steige[s.id] = s
-end
-
-puts "Fertig, insgesamt #{steige.size} Steige gelesen."
-
-
-get '/' do
-  erb :index, :layout => :application
-end
-
-get '/linien' do
-  @linien = linien
-  @types = types
-  erb :linien, :layout => :application
-end
-
-get '/linien/:id' do
-  @l = linien[params[:id]]
-
-  if @l
-    erb :linie, :layout => :application
-  else
-    "Keine Linie gefunden"
+    WLDataLoader.update_csv_files
   end
-end
 
-get '/haltestellen' do
-  @haltestellen = haltestellen
-  erb :haltestellen, :layout => :application
-end
+  @logger.info "Lese Haltestellen..."
 
-get '/haltestellen/:id' do
-  @h = haltestellen[params[:id]]
+  @@data = WLData.new
 
-  if @h
-    @h.refresh_monitors
-    erb :haltestelle, :layout => :application
-  else
-    "Keine Haltestelle gefunden"
+  CSV.foreach("./wl-data/haltestellen.csv", col_sep: ';', headers: true) do |row|
+    h = Haltestelle.new row
+    @@data.haltestellen[h.id] = h
   end
-end
+  @logger.info "Fertig, insgesamt #{@@data.haltestellen.size} Haltestellen gelesen."
 
-get '/karte' do
-  @map = Hash.new
-  erb :karte, :layout => :application
+  @logger.info "Lese Linien..."
+
+  CSV.foreach("./wl-data/linien.csv", col_sep: ';', headers: true) do |row|
+    l = Linie.new row
+    @@data.linien[l.id] = l
+  end
+
+  linien_types = @@data.linien.map {|id, l| l.verkehrsmittel }.uniq
+
+  linien_types.each do |t|
+    @@data.types[t] = @@data.linien.select do |id,l|
+      l.is_a? Linie and l.verkehrsmittel == t
+    end
+  end
+
+  @logger.info "Fertig, insgesamt #{@@data.linien.size} Linien gelesen."
+
+  @logger.info "Lese Steige..."
+
+  CSV.foreach("./wl-data/steige.csv", col_sep: ';', headers: true) do |row|
+    s = Steig.new row
+
+    h = @@data.haltestellen[s.haltestelle]
+    @@data.linien[s.linie].haltestellen[s.reihenfolge.to_i] = h.id
+
+    @@data.steige[s.id] = s
+    h.steige << s.id
+  end
+
+  @logger.info "Fertig, insgesamt #{@@data.steige.size} Steige gelesen."
+
+
+
+  def json_ids(objects)
+    content_type :json
+    id_hash = { anzahl: objects.size,
+      ids: [] }
+
+    objects.each_key do |id|
+      id_hash[:ids].push id
+    end
+
+    id_hash.to_json
+  end
+
+
+  get '/' do
+    erb :index, :layout => :application
+  end
+
+  get '/linien/?' do
+    @linien = @@data.linien
+    @types = @@data.types
+    erb :linien, :layout => :application
+  end
+
+  get '/linien/:id' do
+    @haltestellen = @@data.haltestellen
+    
+    @l = @@data.linien[params[:id].to_i]
+
+    if @l
+      erb :linie, :layout => :application
+    else
+      "Keine Linie gefunden"
+    end
+  end
+
+  get '/haltestellen/?' do
+    @haltestellen = @@data.haltestellen
+    erb :haltestellen, :layout => :application
+  end
+
+  get '/haltestellen.json' do
+    json_ids @@data.haltestellen
+  end
+
+  get '/linien.json' do
+    json_ids @@data.linien
+  end
+
+  get '/steige.json' do
+    json_ids @@data.steige
+  end
+
+  get '/haltestellen/:id.json' do
+    content_type :json
+    @h = @@data.haltestellen[params[:id].to_i]
+    if @h
+      @h.to_json
+    else
+      status 404
+    end
+  end
+
+  get '/linien/:id.json' do
+    content_type :json
+    @linie = @@data.linien[params[:id].to_i]
+    if @linie
+      @linie.to_json
+    else
+      status 404
+    end
+  end
+
+  get '/steige/:id.json' do
+    content_type :json
+    @steig = @@data.steige[params[:id].to_i]
+    if @steig
+      @steig.to_json
+    else
+      status 404
+    end
+  end
+
+  get '/haltestellen/:id' do
+    @h = @@data.haltestellen[params[:id].to_i]
+    @steige = @@data.steige
+    @linien = @@data.linien
+    if @h
+      @h.refresh_monitors
+      erb :haltestelle, :layout => :application
+    else
+      "Keine Haltestelle gefunden"
+    end
+  end
+
+  get '/karte/?' do
+    @map = Hash.new
+    erb :karte, :layout => :application
+  end
+
+  run! if app_file == $0
 end
