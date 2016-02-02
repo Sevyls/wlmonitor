@@ -16,32 +16,41 @@ class Haltestelle
 
   def refresh_monitors
     unless @steige.empty?
-      rbl_nrs = @steige.each { |steig_id|
+      rbl_nrs = []
+
+      @steige.each do |steig_id|
         s = App.data.steige[steig_id]
+
         # manche Steige haben keine RBL_NR im CSV...
         unless s.rbl_nr.empty?
-          "rbl=#{s.rbl_nr}"
+          rbl_nrs << "rbl=#{s.rbl_nr}"
         else
           nil
-        end  }.compact.join('&')
-        App.logger.debug "haltestelle id: #{@id}, rbl_nrs: '#{rbl_nrs}'"
-      @url = "http://www.wienerlinien.at/ogd_realtime/monitor?#{rbl_nrs}&sender=#{App.settings.wlsender}"
+        end
+      end
+      rbl_nrs = rbl_nrs.join '&'
+      App.logger.debug "haltestelle id: #{@id}, rbl_nrs: '#{rbl_nrs}'"
+      url = "http://www.wienerlinien.at/ogd_realtime/monitor?#{rbl_nrs}&sender=#{App.settings.wlsender}"
+      App.logger.debug "rbl_nrs: #{rbl_nrs}"
 
       unless rbl_nrs.empty?
-        App.logger.debug "Sending GET request to #{@url}"
-        resp = Net::HTTP.get_response(URI.parse(@url))
-        if resp.code == '200'
+        App.logger.debug "Sending GET request to #{url}"
+        resp = Net::HTTP.get_response(URI.parse(url))
+        if resp.code.eql? '200'
           App.logger.debug "HTTP 200 received"
           data = resp.body
           App.logger.debug "Parse json monitor data"
           @json = JSON.parse(data)
           monitors = @json["data"]["monitors"]
-          @steige.each do |s|
+          @steige.each do |steig_id|
+            s = App.data.steige[steig_id]
             s.monitor = monitors.select do |monitor|
               monitor['locationStop']['properties']['attributes']['rbl'] == s.rbl_nr.to_i and
               not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty?
             end
           end
+        else
+          App.logger.error resp.code
         end
       end
     else

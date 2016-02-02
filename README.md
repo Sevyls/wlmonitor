@@ -2,11 +2,16 @@
 Wiener Linien Monitor Web App
 
 ## Dependencies
-Sinatra, ActiveSupport, Google Maps JavaScript API
+* Ruby 2.3.x
+* Sinatra
+* ActiveSupport
 
-## Used Wien.gv.at OpenData APIs
+## API usage
 
-### "Wiener Linien - Echtzeitdaten" ( Vienna’s public transport Real time data)
+* Google Maps JavaScript API
+* Wien.gv.at OpenData APIs
+** "Wiener Linien - Echtzeitdaten" (Vienna’s public transport Real time data) 
+
 https://open.wien.at/site/datensatz/?id=add66f20-d033-4eee-b9a0-47019828e698
 (CC BY 3.0 AT) Wiener Linien GmbH & Co KG
 

@@ -1,8 +1,7 @@
 <script src="/js/haltestelle-map.js"></script>
-<div id="haltestelle-koordinaten"class="row">
+<div id="haltestelle" data-haltestelleid="<%= @h.id %>" class="row">
   <div class="col-xs-offset-1 col-xs-9 col-md-offset-0 col-md-12">
     <h1><%= @h.name %></h1>
-    <p class="koords"><span class="lat"><%= @h.lat %></span>, <span class="lon"><%= @h.lon %></span></p>
     <div id="haltestelle-map"></div>
   </div>
 </div>
@@ -11,15 +10,12 @@
   <div class="col-xs-offset-1 col-xs-9 col-md-offset-0 col-md-12">
     <h3>Steige</h3>
     <ul>
-    <% @h.steige.each do |s| %>
-      <li><%= erb :steig, locals: { s: @steige[s], linie: @linien[@steige[s].linie] } %></li>
+    <% @h.steige.each do |steigid| %>
+      <li data-steigid="<%= steigid %>">
+        <%= erb :steig, locals: { s: @steige[steigid], linie: @linien[@steige[steigid].linie] } %>
+      </li>
     <% end %>
     </ul>
-    <p class="debug">
-    <code>
-    <%= @h.url %>
-    </code>
-    </p>
     <p class="debug">
     <code>
     <%= @h.json %>
