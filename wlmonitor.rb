@@ -96,6 +96,7 @@ class App < Sinatra::Base
 
     @@data.steige[s.id] = s
     h.steige << s.id
+    h.linien << s.linie
   end
 
   @logger.info "Fertig, insgesamt #{@@data.steige.size} Steige gelesen."

@@ -1,5 +1,5 @@
 class Haltestelle
-  attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige, :json, :url
+  attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige, :json, :url, :linien, :steige
 
   # csv format: "HALTESTELLEN_ID";"TYP";"DIVA";"NAME";"GEMEINDE";"GEMEINDE_ID";"WGS84_LAT";"WGS84_LON"
   def initialize(csv_row)
@@ -11,7 +11,8 @@ class Haltestelle
     @name = csv_row.field("NAME")
     @gemeinde = csv_row.field("GEMEINDE")
     @gemeinde_id = csv_row.field("GEMEINDE_ID")
-    @steige = []
+    @steige = Set.new
+    @linien = Set.new
   end
 
   def refresh_monitors
@@ -62,7 +63,9 @@ class Haltestelle
     { 'id' => @id,
       'name' => @name,
       'lat' => @lat,
-      'lon' => @lon
+      'lon' => @lon,
+      'steige' => @steige,
+      'linien' => @linien
     }.to_json
   end
 end
