@@ -4,6 +4,8 @@ require 'sinatra/base'
 require 'json'
 require 'net/http'
 require 'logger'
+require "rack/cache"
+require 'digest/sha1'
 
 require './WLDataLoader.rb'
 require './Haltestelle.rb'
@@ -25,6 +27,8 @@ end
 
 class App < Sinatra::Base
   attr_reader :logger
+
+  use Rack::Cache
 
   def self.data
     @@data
@@ -101,7 +105,9 @@ class App < Sinatra::Base
 
   @logger.info "Fertig, insgesamt #{@@data.steige.size} Steige gelesen."
 
-
+  def not_found
+    send_file 'public/404.html', status: 404
+  end
 
   def json_ids(objects)
     content_type :json
@@ -113,6 +119,10 @@ class App < Sinatra::Base
     end
 
     id_hash.to_json
+  end
+
+  before do
+    expires 500, :public, :must_revalidate
   end
 
 
@@ -132,34 +142,47 @@ class App < Sinatra::Base
   end
 
   get '/haltestellen.json' do
-    @@data.haltestellen.to_json
+    content_type :json
+    json = @@data.haltestellen.to_json
+    etag Digest::SHA1.base64digest json
+    json
   end
 
   get '/linien.json' do
-    @@data.linien.to_json
+    content_type :json
+    json = @@data.linien.to_json
+    etag Digest::SHA1.base64digest json
+    json
   end
 
   get '/steige.json' do
-    @@data.steige.to_json
+    content_type :json
+    json = @@data.steige.to_json
+    etag Digest::SHA1.base64digest json
+    json
   end
 
   get '/haltestellen/:id.json' do
-    content_type :json
     @h = @@data.haltestellen[params[:id].to_i]
     if @h
-      @h.to_json
+      content_type :json
+      json = @h.to_json
+      etag Digest::SHA1.base64digest json
+      json
     else
-      status 404
+      not_found
     end
   end
 
   get '/linien/:id.json' do
-    content_type :json
     @linie = @@data.linien[params[:id].to_i]
     if @linie
-      @linie.to_json
+      content_type :json
+      json = @linie.to_json
+      etag Digest::SHA1.base64digest json
+      json
     else
-      status 404
+      not_found
     end
   end
 
@@ -169,19 +192,23 @@ class App < Sinatra::Base
     @l = @@data.linien[params[:id].to_i]
 
     if @l
+
+      etag Digest::SHA1.base64digest @l.to_s
       erb :linie, :layout => :application
     else
-      "Keine Linie gefunden"
+      not_found
     end
   end
 
   get '/steige/:id.json' do
-    content_type :json
     @steig = @@data.steige[params[:id].to_i]
     if @steig
-      @steig.to_json
+      content_type :json
+      json = @steig.to_json
+      etag Digest::SHA1.base64digest json
+      json
     else
-      status 404
+      not_found
     end
   end
 
@@ -191,9 +218,10 @@ class App < Sinatra::Base
     @linien = @@data.linien
     if @h
       @h.refresh_monitors
+      expires 5
       erb :haltestelle, :layout => :application
     else
-      "Keine Haltestelle gefunden"
+      not_found
     end
   end
 
