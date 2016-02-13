@@ -1,6 +1,12 @@
-<h1><%= @l.bezeichnung %></h1>
-<p><%= @l.verkehrsmittel %></p>
+<script src="/js/linie-map.js"></script>
+<div id="linie" data-linieid="<%= @l.id %>">
+  <h1><%= @l.bezeichnung %></h1>
+  <p><%= @l.verkehrsmittel %></p>
+  <div id="linie-map"></div>
+</div>
+
 <div class="list-group">
+  <h3>Haltestellen</h3>
   <% @l.haltestellen.each_value do |h| %>
   <a href="/haltestellen/<%= h %>" class="list-group-item"><%= @haltestellen[h].name %></a>
   <% end %>

@@ -8,14 +8,21 @@
 
 <div id="steige-liste" class="row">
   <div class="col-xs-offset-1 col-xs-9 col-md-offset-0 col-md-12">
-    <h3>Steige</h3>
-    <ul>
-    <% @h.steige.each do |steigid| %>
-      <li data-steigid="<%= steigid %>">
-        <%= erb :steig, locals: { s: @steige[steigid], linie: @linien[@steige[steigid].linie] } %>
-      </li>
+    <h3>Linien</h3>
+
+    <% @h.linien.each do |linieid| %>
+      <h4><a href="/linien/<%= linieid %>"><%= @linien[linieid].bezeichnung %></a></h4>
+      <% @h.steige.each do |steigid| %>
+      <% if @steige[steigid].linie == linieid %>
+
+      <h5 data-steigid="<%= steigid %>">
+        <%= erb :steig, locals: { s: @steige[steigid], linie: @linien[linieid] } %>
+      </h5>
+
+      <% end %>
+      <% end %>
     <% end %>
-    </ul>
+
     <p class="debug">
     <code>
     <%= @h.json %>

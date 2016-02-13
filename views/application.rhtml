@@ -22,7 +22,7 @@
   <!-- Optional theme -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
   <script src="/js/vendor/modernizr-2.6.2.min.js"></script>
-
+  <script src="/js/functions.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=<%= settings.google_maps_api_key %>" type="text/javascript"></script>
 </head>
 <body>
@@ -39,14 +39,14 @@
     	</div>
 			<div class="collapse navbar-collapse" id="menu-items">
 				<ul class="nav navbar-nav">
-					<li<%= ' class="active"' if (@h or @haltestellen) %>><a href="/haltestellen">Haltestellen</a></li>
-					<li<%= ' class="active"' if (@l or @linien) %>><a href="/linien">Linien</a></li>
-          <li<%= ' class="active"' if (@map) %>><a href="/karte">Karte</a></li>
+					<li><a href="/haltestellen">Haltestellen</a></li>
+          <li><a href="/linien">Linien</a></li>
+          <li><a href="/karte">Karte</a></li>
 				</ul>
 			</div>
 		</div>
   </nav>
-  <!--[if lt IE 7]>
+  <!--[if lt IE 9]>
   <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
   <![endif]-->
 

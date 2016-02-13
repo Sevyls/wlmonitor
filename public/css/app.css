@@ -1,5 +1,9 @@
-#haltestelle-map {
+#haltestelle-map, #linie-map {
   height: 450px;
+}
+
+#linie-map {
+  margin-bottom: 1em;
 }
 
 

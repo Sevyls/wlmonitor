@@ -1,16 +1,12 @@
-<span class="steig_linie_bezeichnung"><a href="/linien/<%= linie.id %>"><%= linie.bezeichnung %></a></span>
-<span class="steig_richtung"><%= s.richtung %></span>
-<span class="steig_linie_verkehrsmittel"><%= linie.verkehrsmittel %></span>
-<span class="steig_lat"><%= s.lat %></span>, <span class="steig_lon"><%= s.lon %></span>
+<% unless s.monitor.nil? %>
 <% s.monitor.each do |monitor| %>
 <% monitor['lines'].each do |line| %>
-  <h2><%= line['name'] %> --> <%= line['towards'] %></h2>
-  <ul>
-    <% line['departures']['departure'].each do |departure| %>
-    <% unless departure['departureTime'].empty? %>
-    <li><%= departure['departureTime']['countdown'] %> min</li>
-    <% end %> 
-    <% end %>
-  </ul>
+
+<% line['departures']['departure'].each do |departure| %>
+<% unless departure['departureTime'].empty? %>
+<h6><%= line['towards'] %> <%= departure['departureTime']['countdown'] %> min</h6>
+<% end %>
+<% end %>
+<% end %>
 <% end %>
 <% end %>
