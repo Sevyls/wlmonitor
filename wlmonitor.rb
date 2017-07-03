@@ -149,18 +149,6 @@ class App < Sinatra::Base
     json
   end
 
-  get '/haltestellen/:id.json' do
-    @h = @@data.haltestellen[params[:id].to_i]
-    if @h
-      content_type :json
-      json = @h.to_json
-      etag Digest::SHA1.base64digest json
-      json
-    else
-      not_found
-    end
-  end
-
   get '/linien/:id.json' do
     @linie = @@data.linien[params[:id].to_i]
     if @linie
@@ -199,6 +187,21 @@ class App < Sinatra::Base
     end
   end
 
+  get '/haltestellen/:id.json' do
+    @h = @@data.haltestellen[params[:id].to_i]
+    if @h
+      @h.refresh_monitors
+      expires 5
+
+      content_type :json
+      json = @h.to_json
+      etag Digest::SHA1.base64digest json
+      json
+    else
+      not_found
+    end
+  end
+
   get '/haltestellen/:id' do
     @h = @@data.haltestellen[params[:id].to_i]
     @steige = @@data.steige
@@ -211,6 +214,8 @@ class App < Sinatra::Base
       not_found
     end
   end
+
+
 
   get '/karte/?' do
     @map = Hash.new
