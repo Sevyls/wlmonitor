@@ -44,23 +44,8 @@ class App < Sinatra::Base
     set :logger, logger
     set :logging, logger
 
-    # Load credentials
-    begin
-      filepath = ENV["CRED_FILE"]
-      filepath ||= "creds.json"
-      logger.debug "Reading api keys from creds.json"
-      cred_file = File.open(filepath).read
-      creds = JSON.parse(cred_file)['CONFIG']['CONFIG_VARS']
-      logger.debug "Successfully parsed creds.json"
-    rescue
-      logger.error "Could not open or parse the creds.json file"
-      creds = JSON.generate Hash.new
-      creds['GOOGLE_MAPS_API_KEY'] = ENV['GOOGLE_MAPS_API_KEY']
-      creds['WLSENDER'] = ENV['WLSENDER']
-    end
-
-    set :google_maps_api_key, creds["GOOGLE_MAPS_API_KEY"]
-    set :wlsender, creds["WLSENDER"]
+    set :google_maps_api_key, ENV['GOOGLE_MAPS_API_KEY']
+    set :wlsender, ENV['WLSENDER']
 
     WLDataLoader.update_csv_files
   end
