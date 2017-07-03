@@ -35,7 +35,7 @@ class Haltestelle
       App.logger.debug "rbl_nrs: #{rbl_nrs}"
 
       unless rbl_nrs.empty?
-        App.logger.debug "Sending GET request to #{url}"
+        App.logger.info "Sending GET request to #{url}"
         resp = Net::HTTP.get_response(URI.parse(url))
         if resp.code.eql? '200'
           App.logger.debug "HTTP 200 received"
@@ -60,11 +60,17 @@ class Haltestelle
   end
 
   def to_json
+    @steige_objs = []
+    @steige.each do |steig_id|
+      s = App.data.steige[steig_id]
+      @steige_objs << s
+    end
+
     { 'id' => @id,
       'name' => @name,
       'lat' => @lat,
       'lon' => @lon,
-      'steige' => @steige,
+      'steige' => @steige_objs,
       'linien' => @linien
     }.to_json
   end
