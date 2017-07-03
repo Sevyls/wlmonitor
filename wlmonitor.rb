@@ -55,6 +55,8 @@ class App < Sinatra::Base
     rescue
       logger.error "Could not open or parse the creds.json file"
       creds = JSON.generate Hash.new
+      creds['GOOGLE_MAPS_API_KEY'] = ENV['GOOGLE_MAPS_API_KEY']
+      creds['WLSENDER'] = ENV['WLSENDER']
     end
 
     set :google_maps_api_key, creds["GOOGLE_MAPS_API_KEY"]
