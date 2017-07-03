@@ -193,6 +193,7 @@ class App < Sinatra::Base
       @h.refresh_monitors
       expires 5
 
+      headers 'Access-Control-Allow-Origin' => '*'
       content_type :json
       json = @h.to_json
       etag Digest::SHA1.base64digest json
