@@ -1,3 +1,5 @@
+require 'zlib'
+
 class Haltestelle
   attr_accessor :id, :lat, :lon, :typ, :diva, :name, :gemeinde, :gemeinde_id, :steige, :json, :url, :linien, :steige
 
@@ -36,22 +38,27 @@ class Haltestelle
 
       unless rbl_nrs.empty?
         App.logger.info "Sending GET request to #{url}"
-        resp = Net::HTTP.get_response(URI.parse(url))
-        if resp.code.eql? '200'
-          App.logger.debug "HTTP 200 received"
-          data = resp.body
-          App.logger.debug "Parse json monitor data"
-          @json = JSON.parse(data)
-          monitors = @json["data"]["monitors"]
-          @steige.each do |steig_id|
-            s = App.data.steige[steig_id]
-            s.monitor = monitors.select do |monitor|
-              monitor['locationStop']['properties']['attributes']['rbl'] == s.rbl_nr.to_i and
-              not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty?
+        begin
+          resp = Net::HTTP.get_response(URI.parse(url))
+          if resp.code.eql? '200'
+            App.logger.debug "HTTP 200 received"
+            data = resp.body
+            App.logger.debug "Parse json monitor data"
+            @json = JSON.parse(data)
+            monitors = @json["data"]["monitors"]
+            @steige.each do |steig_id|
+              s = App.data.steige[steig_id]
+              s.monitor = monitors.select do |monitor|
+                monitor['locationStop']['properties']['attributes']['rbl'] == s.rbl_nr.to_i and
+                not (monitor['lines'].select {|line| line['direction'] == s.richtung }).empty?
+              end
             end
+          else
+            App.logger.error resp.code
           end
-        else
-          App.logger.error resp.code
+        rescue Zlib::BufError => e
+          App.logger.error e
+          App.logger.error "Could not load wlmonitor data for #{rbl_nrs}"
         end
       end
     else
