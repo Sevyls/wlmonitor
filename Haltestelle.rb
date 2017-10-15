@@ -42,7 +42,17 @@ class Haltestelle
           resp = Net::HTTP.get_response(URI.parse(url))
           if resp.code.eql? '200'
             App.logger.debug "HTTP 200 received"
-            data = resp.body
+            if resp.header[ 'Content-Encoding' ].eql?( 'gzip' ) then
+              App.logger.debug "Performing gzip decompression for response body."
+              sio = StringIO.new( resp.body )
+              gz = Zlib::GzipReader.new( sio )
+              data = gz.read()
+              App.logger.debug "Finished decompressing gzipped response body."
+            else
+              App.logger.debug "Page is not compressed. Using text response body. "
+              data = resp.body
+            end
+
             App.logger.debug "Parse json monitor data"
             @json = JSON.parse(data)
             monitors = @json["data"]["monitors"]

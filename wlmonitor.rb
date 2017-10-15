@@ -130,6 +130,7 @@ class App < Sinatra::Base
 
   get '/haltestellen.json' do
     content_type :json
+    headers 'Access-Control-Allow-Origin' => '*'
     json = @@data.haltestellen.to_json
     etag Digest::SHA1.base64digest json
     json
